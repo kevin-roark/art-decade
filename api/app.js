@@ -1,20 +1,27 @@
 
 var express = require('express');
-var secrets = require('./secrets');
-var instagram = require('./instagram');
-
-instagram.init(secrets.INSTAGRAM_CLIENT_ID, secrets.INSTAGRAM_CLIENT_SECRET);
+var dataLord = require('./data-lord');
 
 var app = express();
 
-app.get('/', function (req, res) {
-  res.send('Hello Art Decade!');
-});
+app.get('/instagram', function (req, res) {
+  var locationID = req.query.locationID;
+  if (!locationID) {
+    res.status(404);
+    res.json({error: 'need a location id'});
+    return;
+  }
 
-instagram.randomGalleryMedia(function(err, res) {
-  var data = res.data;
-  var compressedData = instagram.compress(data);
-  console.log(compressedData);
+  dataLord.instagram(locationID, function(err, data) {
+    if (err) {
+      console.log(err);
+      res.status(err.status || 500);
+      res.json({error: err});
+    }
+    else {
+      res.json(data);
+    }
+  });
 });
 
 module.exports = app;
