@@ -5,11 +5,10 @@ var kt = require('kutility');
 var InstagramBase = 'https://api.instagram.com/v1/';
 
 var credentials;
-
 module.exports.init = function(clientID, clientSecret) {
   credentials = {
-    'client_id': clientID,
-    'client_secret': clientSecret
+    client_id: clientID,
+    client_secret: clientSecret
   };
 };
 
@@ -43,4 +42,38 @@ module.exports.locationMedia = function(locationID, callback) {
 module.exports.randomGalleryMedia = function(callback) {
   var galleryIDs = ['212943401', '294847', '1218268', '401192748'];
   module.exports.locationMedia(kt.choice(galleryIDs), callback);
-}
+};
+
+module.exports.compress = function(responseData) {
+  function minData(data) {
+    var min = {
+      type: data.type,
+      likes: data.likes.count,
+      thumbnail: data.images.thumbnail
+    };
+
+    if (data.caption) {
+      min.caption = data.caption.text;
+    }
+
+    if (data.type === 'image') {
+      min.media = data.images.low_resolution;
+    }
+    else if (data.type === 'video') {
+      min.media = data.videos.low_resolution;
+    }
+
+    return min;
+  }
+
+  if (Array.isArray(responseData)) {
+    var arr = [];
+    for (var i = 0; i < responseData.length; i++) {
+      arr.push(minData(responseData[i]));
+    }
+    return arr;
+  }
+  else {
+    return minData(responseData);
+  }
+};
