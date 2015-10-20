@@ -48337,7 +48337,24 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
     },
     doTimedWork: {
       value: function doTimedWork() {
+        var _this = this;
+
         _get(Object.getPrototypeOf(MainScene.prototype), "doTimedWork", this).call(this);
+
+        $.getJSON("http://localhost:3000/instagram?locationID=212943401", function (data) {
+          console.log(data);
+
+          for (var i = 0; i < data.length; i++) {
+            var media = data[i];
+            var imageURL = media.thumbnail.url;
+            var $el = $("<img></img>");
+            $el.attr("src", imageURL);
+            $el.css("position", "absolute");
+            $el.css("left", Math.random() * window.innerWidth * 0.9 + "px");
+            $el.css("top", Math.random() * window.innerHeight * 0.9 + "px");
+            _this.domContainer.append($el);
+          }
+        });
       }
     },
     exit: {

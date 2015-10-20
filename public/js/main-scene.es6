@@ -34,7 +34,20 @@ export class MainScene extends SheenScene {
   doTimedWork() {
     super.doTimedWork();
 
+    $.getJSON('http://localhost:3000/instagram?locationID=212943401', (data) => {
+      console.log(data);
 
+      for (var i = 0; i < data.length; i++) {
+        var media = data[i];
+        var imageURL = media.thumbnail.url;
+        var $el = $('<img></img>');
+        $el.attr('src', imageURL);
+        $el.css('position', 'absolute');
+        $el.css('left', (Math.random() * window.innerWidth * 0.9) + 'px');
+        $el.css('top', (Math.random() * window.innerHeight * 0.9) + 'px');
+        this.domContainer.append($el);
+      }
+    });
   }
 
   exit() {

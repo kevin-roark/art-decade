@@ -4,6 +4,12 @@ var dataLord = require('./data-lord');
 
 var app = express();
 
+// cors middleware
+app.use(function(req, res, next) {
+   res.header('Access-Control-Allow-Origin', '*');
+   next();
+});
+
 app.get('/instagram', function (req, res) {
   var locationID = req.query.locationID;
   if (!locationID) {

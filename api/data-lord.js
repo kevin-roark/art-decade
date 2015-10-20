@@ -52,7 +52,11 @@ function _instagram(locationID, callback) {
 function updateRandomCacheItem() {
   var mediaCacheKey = kt.choice(['instagram']);
   var mediaCache = cache[mediaCacheKey];
+
   var secondaryKey = kt.choice(Object.keys(mediaCache));
+  if (!secondaryKey) {
+    return;
+  }
 
   if (mediaCacheKey === 'instagram') {
     _instagram(secondaryKey, function(err, data) {
