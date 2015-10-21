@@ -48517,12 +48517,14 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
     },
     children: {
       value: function children() {
-        return this.lights;
+        return [this.lightContainer];
       }
     },
     update: {
       value: function update() {
         _get(Object.getPrototypeOf(MainScene.prototype), "update", this).call(this);
+
+        this.lightContainer.position.y = this.camera.position.y - 5;
       }
     },
     makeLights: {
@@ -48530,7 +48532,9 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
       // Creation
 
       value: function makeLights() {
-        var scene = this.scene;
+        var container = new THREE.Object3D();
+        this.scene.add(container);
+        this.lightContainer = container;
 
         this.frontLight = makeDirectionalLight();
         this.frontLight.position.set(-40, 125, 200);
@@ -48552,7 +48556,7 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
           var light = new THREE.DirectionalLight(16777215, 0.9);
           light.color.setHSL(0.1, 1, 0.95);
 
-          scene.add(light);
+          container.add(light);
           return light;
         }
 

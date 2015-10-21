@@ -45,17 +45,21 @@ export class MainScene extends SheenScene {
   }
 
   children() {
-    return this.lights;
+    return [this.lightContainer];
   }
 
   update() {
     super.update();
+
+    this.lightContainer.position.y = this.camera.position.y - 5;
   }
 
   // Creation
 
   makeLights() {
-    let scene = this.scene;
+    let container = new THREE.Object3D();
+    this.scene.add(container);
+    this.lightContainer = container;
 
     this.frontLight = makeDirectionalLight();
     this.frontLight.position.set(-40, 125, 200);
@@ -77,7 +81,7 @@ export class MainScene extends SheenScene {
       var light = new THREE.DirectionalLight( 0xffffff, 0.9);
       light.color.setHSL( 0.1, 1, 0.95 );
 
-      scene.add(light);
+      container.add(light);
       return light;
     }
 
