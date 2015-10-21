@@ -32,6 +32,8 @@ module.exports = function (camera, options) {
 	this.autoForward = options.autoForward || false;
 	this.keysAsRotation = options.keysAsRotation || false;
 
+	this.allowYMovement = options.allowYMovement || false;
+
 	this.enabled = false;
 
 	this.locker = new Pointerlocker();
@@ -248,7 +250,11 @@ module.exports = function (camera, options) {
 			var rotMult = delta * this.rollSpeed;
 
 			yawObject.translateX( this.moveVector.x * moveMult );
-			yawObject.translateY( this.moveVector.y * moveMult );
+
+			if (this.allowYMovement) {
+				yawObject.translateY( this.moveVector.y * moveMult );
+			}
+			
 			yawObject.translateZ( this.moveVector.z * moveMult );
 
 			if (this.keysAsRotation) {
