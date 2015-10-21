@@ -46223,6 +46223,128 @@ module.exports = function () {
 },{}],6:[function(require,module,exports){
 "use strict";
 
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var THREE = require("three");
+var Physijs = require("./lib/physi.js");
+var $ = require("jquery");
+var kt = require("kutility");
+var SheenMesh = require("./sheen-mesh");
+var imageUtil = require("./image-util");
+var geometryUtil = require("./geometry-util");
+
+var Gallery = exports.Gallery = (function () {
+  function Gallery(scene, options) {
+    _classCallCheck(this, Gallery);
+
+    this.scene = scene;
+    this.name = options.name || "David Zwirner Gallery";
+    this.locationID = options.locationID || "212943401";
+    this.yLevel = options.yLevel || 0;
+
+    this.photoMeshes = [];
+    this.meshContainer = new THREE.Object3D();
+
+    this.ground = createGround(500, this.yLevel);
+    this.ground.addTo(this.meshContainer);
+
+    this.scene.add(this.meshContainer);
+  }
+
+  _createClass(Gallery, {
+    create: {
+      value: function create(callback) {
+        var _this = this;
+
+        var endpoint = "http://localhost:3000/instagram?locationID=" + this.locationID;
+        $.getJSON(endpoint, function (data) {
+          console.log(data);
+
+          for (var i = 0; i < data.length; i++) {
+            var media = data[i];
+            _this.makePhotoMesh(media);
+          }
+
+          if (callback) {
+            callback();
+          }
+        });
+      }
+    },
+    destroy: {
+      value: function destroy() {
+        this.scene.remove(this.meshContainer);
+      }
+    },
+    makePhotoMesh: {
+      value: function makePhotoMesh(media) {
+        var imageURL = media.thumbnail.url;
+        var texture = imageUtil.loadTexture(imageURL, false);
+        texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.minFilter = THREE.NearestFilter;
+
+        var width = Math.random() * 12 + 2.5;
+        var height = media.thumbnail.width / media.thumbnail.height * width;
+        var mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.2), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
+
+        mesh.position.set(-50 + Math.random() * 100, Math.random() * 10 + height / 2 + 1.25 + this.yLevel, -Math.random() * 75);
+        mesh.castShadow = true;
+
+        this.photoMeshes.push(mesh);
+        this.meshContainer.add(mesh);
+      }
+    }
+  });
+
+  return Gallery;
+})();
+
+function createGround(length, y) {
+  return new SheenMesh({
+    meshCreator: function (callback) {
+      var geometry = new THREE.PlaneBufferGeometry(length, length);
+      geometryUtil.computeShit(geometry);
+
+      var rawMaterial = new THREE.MeshBasicMaterial({
+        color: 15658734,
+        side: THREE.DoubleSide
+      });
+
+      // lets go high friction, low restitution
+      var material = Physijs.createMaterial(rawMaterial, 0.8, 0.4);
+
+      var mesh = new Physijs.BoxMesh(geometry, material, 0);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.__dirtyRotation = true;
+
+      mesh.receiveShadow = true;
+
+      callback(geometry, material, mesh);
+    },
+
+    position: new THREE.Vector3(0, y, 0),
+
+    collisionHandler: function () {}
+  });
+}
+
+},{"./geometry-util":7,"./image-util":8,"./lib/physi.js":10,"./sheen-mesh":13,"jquery":1,"kutility":2,"three":3}],7:[function(require,module,exports){
+"use strict";
+
+module.exports.computeShit = function (geometry) {
+  geometry.computeFaceNormals();
+  geometry.computeVertexNormals();
+};
+
+},{}],8:[function(require,module,exports){
+"use strict";
+
 var THREE = require("three");
 
 // https://github.com/mrdoob/three.js/issues/687
@@ -46257,7 +46379,7 @@ var corsPath = function corsPath(path) {
   return "http://crossorigin.me/" + path; // add cors headers, thank you!
 };
 
-},{"three":3}],7:[function(require,module,exports){
+},{"three":3}],9:[function(require,module,exports){
 // ----------------------------------------------------------------------------
 // Buzz, a Javascript HTML5 Audio library
 // v1.1.10 - Built 2015-04-20 13:05
@@ -47002,7 +47124,7 @@ var corsPath = function corsPath(path) {
     return buzz;
 });
 
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -48323,7 +48445,7 @@ module.exports = (function () {
 	return Physijs;
 })();
 
-},{"three":3}],9:[function(require,module,exports){
+},{"three":3}],11:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -48339,17 +48461,13 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var THREE = require("three");
-var Physijs = require("./lib/physi.js");
 var $ = require("jquery");
 var buzz = require("./lib/buzz.js");
 var kt = require("kutility");
 
 var SheenScene = require("./sheen-scene.es6").SheenScene;
 
-var SheenMesh = require("./sheen-mesh");
-var imageUtil = require("./image-util");
-
-var DomMode = false;
+var Gallery = require("./gallery.es6").Gallery;
 
 var MainScene = exports.MainScene = (function (_SheenScene) {
 
@@ -48373,53 +48491,34 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
       value: function enter() {
         _get(Object.getPrototypeOf(MainScene.prototype), "enter", this).call(this);
 
-        this.photoMeshes = [];
-
         this.camera.position.set(0, 5, 0);
 
-        this.ground = createGround(500);
-        this.ground.addTo(this.scene);
-
         this.makeLights();
+
+        // make all the galleries here
+        this.david = new Gallery(this.scene, {
+          yLevel: 0
+        });
       }
     },
     doTimedWork: {
       value: function doTimedWork() {
-        var _this = this;
-
         _get(Object.getPrototypeOf(MainScene.prototype), "doTimedWork", this).call(this);
 
-        $.getJSON("http://localhost:3000/instagram?locationID=212943401", function (data) {
-          console.log(data);
-
-          for (var i = 0; i < data.length; i++) {
-            var media = data[i];
-
-            if (DomMode) {
-              var $el = $("<img></img>");
-              $el.attr("src", media.thumbnail.url);
-              $el.css("position", "absolute");
-              $el.css("left", Math.random() * window.innerWidth * 0.9 + "px");
-              $el.css("top", Math.random() * window.innerHeight * 0.9 + "px");
-              _this.domContainer.append($el);
-            } else {
-              _this.makePhotoMesh(media);
-            }
-          }
-        });
+        this.david.create();
       }
     },
     exit: {
       value: function exit() {
         _get(Object.getPrototypeOf(MainScene.prototype), "exit", this).call(this);
 
-        this.ground.removeFrom(this.scene);
+        this.david.destroy();
       }
     },
     children: {
       value: function children() {
         var lights = [this.hemiLight, this.frontLight, this.backLight, this.leftLight, this.rightLight];
-        return lights.concat(this.photoMeshes);
+        return lights;
       }
     },
     update: {
@@ -48433,7 +48532,6 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
 
       value: function makeLights() {
         var scene = this.scene;
-        var ground = this.ground;
 
         this.frontLight = makeDirectionalLight();
         this.frontLight.position.set(-40, 125, 200);
@@ -48452,7 +48550,6 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
         function makeDirectionalLight() {
           var light = new THREE.DirectionalLight(16777215, 0.9);
           light.color.setHSL(0.1, 1, 0.95);
-          light.target = ground.mesh;
 
           scene.add(light);
           return light;
@@ -48465,65 +48562,13 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
           light.shadowMapWidth = light.shadowMapHeight = 2048;
         }
       }
-    },
-    makePhotoMesh: {
-      value: function makePhotoMesh(media) {
-        var imageURL = media.thumbnail.url;
-        var texture = imageUtil.loadTexture(imageURL, false);
-        texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.minFilter = THREE.NearestFilter;
-
-        var width = Math.random() * 12 + 2.5;
-        var height = media.thumbnail.width / media.thumbnail.height * width;
-        var mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.2), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
-
-        mesh.position.set(-50 + Math.random() * 100, Math.random() * 10 + height / 2 + 1.25, -Math.random() * 75);
-        mesh.castShadow = true;
-
-        this.photoMeshes.push(mesh);
-        this.scene.add(mesh);
-      }
     }
   });
 
   return MainScene;
 })(SheenScene);
 
-function createGround(length) {
-  return new SheenMesh({
-    meshCreator: function (callback) {
-      var geometry = new THREE.PlaneGeometry(length, length);
-      computeGeometryThings(geometry);
-
-      var rawMaterial = new THREE.MeshBasicMaterial({
-        color: 15658734,
-        side: THREE.DoubleSide
-      });
-
-      // lets go high friction, low restitution
-      var material = Physijs.createMaterial(rawMaterial, 0.8, 0.4);
-
-      var mesh = new Physijs.BoxMesh(geometry, material, 0);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.__dirtyRotation = true;
-
-      mesh.receiveShadow = true;
-
-      callback(geometry, material, mesh);
-    },
-
-    position: new THREE.Vector3(0, 0, 0),
-
-    collisionHandler: function () {}
-  });
-}
-
-function computeGeometryThings(geometry) {
-  geometry.computeFaceNormals();
-  geometry.computeVertexNormals();
-}
-
-},{"./image-util":6,"./lib/buzz.js":7,"./lib/physi.js":8,"./sheen-mesh":11,"./sheen-scene.es6":12,"jquery":1,"kutility":2,"three":3}],10:[function(require,module,exports){
+},{"./gallery.es6":6,"./lib/buzz.js":9,"./sheen-scene.es6":14,"jquery":1,"kutility":2,"three":3}],12:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -48618,7 +48663,7 @@ $(function () {
   sheen.activate();
 });
 
-},{"./controls/fly-controls":4,"./lib/physi.js":8,"./main-scene.es6":9,"./three-boiler.es6":13,"jquery":1,"three":3}],11:[function(require,module,exports){
+},{"./controls/fly-controls":4,"./lib/physi.js":10,"./main-scene.es6":11,"./three-boiler.es6":15,"jquery":1,"three":3}],13:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -48837,7 +48882,7 @@ SheenMesh.prototype.fallToFloor = function (threshold, speed) {
 SheenMesh.prototype.additionalInit = function () {};
 SheenMesh.prototype.additionalRender = function () {};
 
-},{"./lib/physi.js":8,"./util/model-loader":14,"kutility":2,"three":3}],12:[function(require,module,exports){
+},{"./lib/physi.js":10,"./util/model-loader":16,"kutility":2,"three":3}],14:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -49015,7 +49060,7 @@ var SheenScene = exports.SheenScene = (function () {
   return SheenScene;
 })();
 
-},{"jquery":1,"three":3}],13:[function(require,module,exports){
+},{"jquery":1,"three":3}],15:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -49171,7 +49216,7 @@ THREE.typeface_js = window._typeface_js;
 
 // lol
 
-},{"jquery":1,"three":3}],14:[function(require,module,exports){
+},{"jquery":1,"three":3}],16:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -49217,4 +49262,4 @@ function fetch(name, callback) {
   callback(geometry, materials);
 }
 
-},{"three":3}]},{},[10]);
+},{"three":3}]},{},[12]);
