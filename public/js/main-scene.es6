@@ -7,6 +7,9 @@ let kt = require('kutility');
 
 import {SheenScene} from './sheen-scene.es6';
 let SheenMesh = require('./sheen-mesh');
+let imageUtil = require('./image-util');
+
+var DomMode = false;
 
 export class MainScene extends SheenScene {
 
@@ -23,9 +26,11 @@ export class MainScene extends SheenScene {
   enter() {
     super.enter();
 
+    this.photoMeshes = [];
+
     this.camera.position.set(0, 5, 0);
 
-    this.ground = createGround();
+    this.ground = createGround(500);
     this.ground.addTo(this.scene);
 
     this.makeLights();
@@ -39,13 +44,18 @@ export class MainScene extends SheenScene {
 
       for (var i = 0; i < data.length; i++) {
         var media = data[i];
-        var imageURL = media.thumbnail.url;
-        var $el = $('<img></img>');
-        $el.attr('src', imageURL);
-        $el.css('position', 'absolute');
-        $el.css('left', (Math.random() * window.innerWidth * 0.9) + 'px');
-        $el.css('top', (Math.random() * window.innerHeight * 0.9) + 'px');
-        this.domContainer.append($el);
+
+        if (DomMode) {
+          var $el = $('<img></img>');
+          $el.attr('src', media.thumbnail.url);
+          $el.css('position', 'absolute');
+          $el.css('left', (Math.random() * window.innerWidth * 0.9) + 'px');
+          $el.css('top', (Math.random() * window.innerHeight * 0.9) + 'px');
+          this.domContainer.append($el);
+        }
+        else {
+          this.makePhotoMesh(media);
+        }
       }
     });
   }
@@ -54,12 +64,11 @@ export class MainScene extends SheenScene {
     super.exit();
 
     this.ground.removeFrom(this.scene);
+  }
 
-    this.scene.remove(this.hemiLight);
-    this.scene.remove(this.frontLight);
-    this.scene.remove(this.backLight);
-    this.scene.remove(this.leftLight);
-    this.scene.remove(this.rightLight);
+  children() {
+    var lights = [this.hemiLight, this.frontLight, this.backLight, this.leftLight, this.rightLight];
+    return lights.concat(this.photoMeshes);
   }
 
   update() {
@@ -84,7 +93,6 @@ export class MainScene extends SheenScene {
 
     this.rightLight = makeDirectionalLight();
     this.rightLight.position.set(200, 75, -45);
-    setupShadow(this.rightLight);
     this.rightLight.shadowDarkness = 0.05;
 
     function makeDirectionalLight() {
@@ -104,6 +112,26 @@ export class MainScene extends SheenScene {
     }
   }
 
+  makePhotoMesh(media) {
+    var imageURL = media.thumbnail.url;
+    var texture = imageUtil.loadTexture(imageURL, false);
+    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.minFilter = THREE.NearestFilter;
+
+    var width = Math.random() * 12 + 2.5;
+    var height = (media.thumbnail.width / media.thumbnail.height) * width;
+    var mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(width, height, 0.2),
+      new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide})
+    );
+
+    mesh.position.set(-50 + Math.random() * 100, Math.random() * 10 + height/2 + 1.25, -Math.random() * 75);
+    mesh.castShadow = true;
+
+    this.photoMeshes.push(mesh);
+    this.scene.add(mesh);
+  }
+
 }
 
 function createGround(length) {
@@ -113,7 +141,7 @@ function createGround(length) {
       computeGeometryThings(geometry);
 
       let rawMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
+        color: 0xeeeeee,
         side: THREE.DoubleSide
       });
 
@@ -136,6 +164,7 @@ function createGround(length) {
     }
   });
 }
+
 
 function computeGeometryThings(geometry) {
   geometry.computeFaceNormals();

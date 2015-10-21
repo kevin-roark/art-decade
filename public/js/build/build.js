@@ -46215,6 +46215,43 @@ module.exports = function () {
 };
 
 },{}],6:[function(require,module,exports){
+"use strict";
+
+var THREE = require("three");
+
+// https://github.com/mrdoob/three.js/issues/687
+// handles CORS texture thing
+module.exports.loadTexture = function loadImage(path, needCors) {
+  if (!path) path = "";
+
+  if (needCors) {
+    path = corsPath(path);
+  }
+
+  THREE.ImageUtils.crossOrigin = "";
+  return THREE.ImageUtils.loadTexture(path);
+};
+
+module.exports.loadDomImage = function (path, callback) {
+  if (!path) path = "";
+
+  path = corsPath(path);
+
+  var img = new Image();
+  img.crossOrigin = "";
+
+  img.onload = function () {
+    callback(img);
+  };
+
+  img.src = path;
+};
+
+var corsPath = function corsPath(path) {
+  return "http://crossorigin.me/" + path; // add cors headers, thank you!
+};
+
+},{"three":3}],7:[function(require,module,exports){
 // ----------------------------------------------------------------------------
 // Buzz, a Javascript HTML5 Audio library
 // v1.1.10 - Built 2015-04-20 13:05
@@ -46959,7 +46996,7 @@ module.exports = function () {
     return buzz;
 });
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -48280,7 +48317,7 @@ module.exports = (function () {
 	return Physijs;
 })();
 
-},{"three":3}],8:[function(require,module,exports){
+},{"three":3}],9:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -48304,6 +48341,9 @@ var kt = require("kutility");
 var SheenScene = require("./sheen-scene.es6").SheenScene;
 
 var SheenMesh = require("./sheen-mesh");
+var imageUtil = require("./image-util");
+
+var DomMode = false;
 
 var MainScene = exports.MainScene = (function (_SheenScene) {
 
@@ -48327,9 +48367,11 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
       value: function enter() {
         _get(Object.getPrototypeOf(MainScene.prototype), "enter", this).call(this);
 
+        this.photoMeshes = [];
+
         this.camera.position.set(0, 5, 0);
 
-        this.ground = createGround();
+        this.ground = createGround(500);
         this.ground.addTo(this.scene);
 
         this.makeLights();
@@ -48346,13 +48388,17 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
 
           for (var i = 0; i < data.length; i++) {
             var media = data[i];
-            var imageURL = media.thumbnail.url;
-            var $el = $("<img></img>");
-            $el.attr("src", imageURL);
-            $el.css("position", "absolute");
-            $el.css("left", Math.random() * window.innerWidth * 0.9 + "px");
-            $el.css("top", Math.random() * window.innerHeight * 0.9 + "px");
-            _this.domContainer.append($el);
+
+            if (DomMode) {
+              var $el = $("<img></img>");
+              $el.attr("src", media.thumbnail.url);
+              $el.css("position", "absolute");
+              $el.css("left", Math.random() * window.innerWidth * 0.9 + "px");
+              $el.css("top", Math.random() * window.innerHeight * 0.9 + "px");
+              _this.domContainer.append($el);
+            } else {
+              _this.makePhotoMesh(media);
+            }
           }
         });
       }
@@ -48362,12 +48408,12 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
         _get(Object.getPrototypeOf(MainScene.prototype), "exit", this).call(this);
 
         this.ground.removeFrom(this.scene);
-
-        this.scene.remove(this.hemiLight);
-        this.scene.remove(this.frontLight);
-        this.scene.remove(this.backLight);
-        this.scene.remove(this.leftLight);
-        this.scene.remove(this.rightLight);
+      }
+    },
+    children: {
+      value: function children() {
+        var lights = [this.hemiLight, this.frontLight, this.backLight, this.leftLight, this.rightLight];
+        return lights.concat(this.photoMeshes);
       }
     },
     update: {
@@ -48395,7 +48441,6 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
 
         this.rightLight = makeDirectionalLight();
         this.rightLight.position.set(200, 75, -45);
-        setupShadow(this.rightLight);
         this.rightLight.shadowDarkness = 0.05;
 
         function makeDirectionalLight() {
@@ -48414,6 +48459,24 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
           light.shadowMapWidth = light.shadowMapHeight = 2048;
         }
       }
+    },
+    makePhotoMesh: {
+      value: function makePhotoMesh(media) {
+        var imageURL = media.thumbnail.url;
+        var texture = imageUtil.loadTexture(imageURL, false);
+        texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.minFilter = THREE.NearestFilter;
+
+        var width = Math.random() * 12 + 2.5;
+        var height = media.thumbnail.width / media.thumbnail.height * width;
+        var mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.2), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
+
+        mesh.position.set(-50 + Math.random() * 100, Math.random() * 10 + height / 2 + 1.25, -Math.random() * 75);
+        mesh.castShadow = true;
+
+        this.photoMeshes.push(mesh);
+        this.scene.add(mesh);
+      }
     }
   });
 
@@ -48427,7 +48490,7 @@ function createGround(length) {
       computeGeometryThings(geometry);
 
       var rawMaterial = new THREE.MeshBasicMaterial({
-        color: 16777215,
+        color: 15658734,
         side: THREE.DoubleSide
       });
 
@@ -48454,7 +48517,7 @@ function computeGeometryThings(geometry) {
   geometry.computeVertexNormals();
 }
 
-},{"./lib/buzz.js":6,"./lib/physi.js":7,"./sheen-mesh":10,"./sheen-scene.es6":11,"jquery":1,"kutility":2,"three":3}],9:[function(require,module,exports){
+},{"./image-util":6,"./lib/buzz.js":7,"./lib/physi.js":8,"./sheen-mesh":11,"./sheen-scene.es6":12,"jquery":1,"kutility":2,"three":3}],10:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -48549,7 +48612,7 @@ $(function () {
   sheen.activate();
 });
 
-},{"./controls/fly-controls":4,"./lib/physi.js":7,"./main-scene.es6":8,"./three-boiler.es6":12,"jquery":1,"three":3}],10:[function(require,module,exports){
+},{"./controls/fly-controls":4,"./lib/physi.js":8,"./main-scene.es6":9,"./three-boiler.es6":13,"jquery":1,"three":3}],11:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -48768,7 +48831,7 @@ SheenMesh.prototype.fallToFloor = function (threshold, speed) {
 SheenMesh.prototype.additionalInit = function () {};
 SheenMesh.prototype.additionalRender = function () {};
 
-},{"./lib/physi.js":7,"./util/model-loader":13,"kutility":2,"three":3}],11:[function(require,module,exports){
+},{"./lib/physi.js":8,"./util/model-loader":14,"kutility":2,"three":3}],12:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -48946,7 +49009,7 @@ var SheenScene = exports.SheenScene = (function () {
   return SheenScene;
 })();
 
-},{"jquery":1,"three":3}],12:[function(require,module,exports){
+},{"jquery":1,"three":3}],13:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -49102,7 +49165,7 @@ THREE.typeface_js = window._typeface_js;
 
 // lol
 
-},{"jquery":1,"three":3}],13:[function(require,module,exports){
+},{"jquery":1,"three":3}],14:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -49148,4 +49211,4 @@ function fetch(name, callback) {
   callback(geometry, materials);
 }
 
-},{"three":3}]},{},[9]);
+},{"three":3}]},{},[10]);
