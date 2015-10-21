@@ -48517,8 +48517,7 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
     },
     children: {
       value: function children() {
-        var lights = [this.hemiLight, this.frontLight, this.backLight, this.leftLight, this.rightLight];
-        return lights;
+        return this.lights;
       }
     },
     update: {
@@ -48546,6 +48545,8 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
         this.rightLight = makeDirectionalLight();
         this.rightLight.position.set(200, 75, -45);
         this.rightLight.shadowDarkness = 0.05;
+
+        this.lights = [this.frontLight, this.backLight, this.leftLight, this.rightLight];
 
         function makeDirectionalLight() {
           var light = new THREE.DirectionalLight(16777215, 0.9);

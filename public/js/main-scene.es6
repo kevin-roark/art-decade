@@ -45,8 +45,7 @@ export class MainScene extends SheenScene {
   }
 
   children() {
-    var lights = [this.hemiLight, this.frontLight, this.backLight, this.leftLight, this.rightLight];
-    return lights;
+    return this.lights;
   }
 
   update() {
@@ -71,6 +70,8 @@ export class MainScene extends SheenScene {
     this.rightLight = makeDirectionalLight();
     this.rightLight.position.set(200, 75, -45);
     this.rightLight.shadowDarkness = 0.05;
+
+    this.lights = [this.frontLight, this.backLight, this.leftLight, this.rightLight];
 
     function makeDirectionalLight() {
       var light = new THREE.DirectionalLight( 0xffffff, 0.9);
