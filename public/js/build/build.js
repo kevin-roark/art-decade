@@ -46232,6 +46232,200 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var THREE = require("three");
+var imageUtil = require("../image-util");
+
+var GalleryLayout = exports.GalleryLayout = (function () {
+  function GalleryLayout(options) {
+    _classCallCheck(this, GalleryLayout);
+
+    // mandatory config
+    this.container = options.container;
+    this.media = options.media;
+    this.controlObject = options.controlObject;
+
+    // optional config
+    this.yLevel = options.yLevel || 0;
+
+    // perform initial layout
+    for (var i = 0; i < this.media.length; i++) {
+      var media = this.media[i];
+      this.layoutMedia(i, media);
+    }
+  }
+
+  _createClass(GalleryLayout, {
+    update: {
+      value: function update() {}
+    },
+    layoutMedia: {
+      value: function layoutMedia(index, media) {}
+    },
+    createTexture: {
+      value: function createTexture(media) {
+        var imageURL = media.thumbnail.url;
+        var texture = imageUtil.loadTexture(imageURL, false);
+        texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.minFilter = THREE.NearestFilter;
+        return texture;
+      }
+    }
+  });
+
+  return GalleryLayout;
+})();
+
+// override this
+
+},{"../image-util":11,"three":3}],7:[function(require,module,exports){
+"use strict";
+
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _get = function get(object, property, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc && desc.writable) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var THREE = require("three");
+
+var GalleryLayout = require("./gallery-layout.es6").GalleryLayout;
+
+/// different hole styles
+/// set imagedepth == distanceBetweenPhotos to get cool no gap style
+//
+
+var Hole = exports.Hole = (function (_GalleryLayout) {
+  function Hole(options) {
+    _classCallCheck(this, Hole);
+
+    this.xPosition = options.xPosition || 0;
+    this.zPosition = options.zPosition || 0;
+    this.imageWidth = options.imageWidth || 20;
+    this.imageDepth = options.imageDepth || 20;
+
+    this.distanceBetweenPhotos = options.distanceBetweenPhotos || 25;
+    this.downwardVelocity = options.initialDownwardVelocity || -0.001;
+    this.thresholdVelocity = options.thresholdVelocity || -0.022;
+    this.slowAcceleration = options.slowAcceleration || -0.00003;
+    this.fastAcceleration = options.fastAcceleration || -0.0005; // good fun value is -0.0005
+    this.repeatCount = options.repeatCount || Math.round(1000 / options.media.length);
+    this.fallThroughImages = options.fallThroughImages || true;
+
+    _get(Object.getPrototypeOf(Hole.prototype), "constructor", this).call(this, options);
+  }
+
+  _inherits(Hole, _GalleryLayout);
+
+  _createClass(Hole, {
+    update: {
+      value: function update() {
+        _get(Object.getPrototypeOf(Hole.prototype), "update", this).call(this);
+
+        console.log(this.downwardVelocity);
+
+        if (this.downwardVelocity > this.thresholdVelocity) {
+          this.downwardVelocity += this.slowAcceleration;
+        } else {
+          this.downwardVelocity += this.fastAcceleration;
+        }
+
+        this.controlObject.translateY(this.downwardVelocity);
+      }
+    },
+    layoutMedia: {
+      value: function layoutMedia(index, media) {
+        var width = this.imageWidth;
+        var height = media.thumbnail.width / media.thumbnail.height * width;
+        var mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, this.imageDepth), new THREE.MeshBasicMaterial({ map: this.createTexture(media), side: THREE.DoubleSide }));
+
+        mesh.castShadow = true;
+
+        if (this.fallThroughImages) {
+          mesh.rotation.x = Math.PI / 2;
+        }
+
+        var distancePerChunk = this.media.length * this.distanceBetweenPhotos;
+
+        for (var i = 0; i < this.repeatCount; i++) {
+          var mediaMesh = i === 0 ? mesh : mesh.clone();
+
+          // cool stacky intersection way: this.yLevel - (index * i * this.distanceBetweenPhotos)
+          var y = this.yLevel - i * distancePerChunk - index * this.distanceBetweenPhotos;
+          mediaMesh.position.set(this.xPosition, y, this.zPosition);
+
+          this.container.add(mediaMesh);
+        }
+      }
+    }
+  });
+
+  return Hole;
+})(GalleryLayout);
+
+},{"./gallery-layout.es6":6,"three":3}],8:[function(require,module,exports){
+"use strict";
+
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _inherits = function (subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) subClass.__proto__ = superClass; };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var THREE = require("three");
+
+var GalleryLayout = require("./gallery-layout.es6").GalleryLayout;
+
+var RandomLayout = exports.RandomLayout = (function (_GalleryLayout) {
+  function RandomLayout() {
+    _classCallCheck(this, RandomLayout);
+
+    if (_GalleryLayout != null) {
+      _GalleryLayout.apply(this, arguments);
+    }
+  }
+
+  _inherits(RandomLayout, _GalleryLayout);
+
+  _createClass(RandomLayout, {
+    layoutMedia: {
+      value: function layoutMedia(index, media) {
+        var width = Math.random() * 12 + 2.5;
+        var height = media.thumbnail.width / media.thumbnail.height * width;
+        var mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.2), new THREE.MeshBasicMaterial({ map: this.createTexture(media), side: THREE.DoubleSide }));
+
+        mesh.castShadow = true;
+
+        mesh.position.set(-50 + Math.random() * 100, Math.random() * 10 + height / 2 + 1.25 + this.yLevel, -Math.random() * 75);
+
+        this.container.add(mesh);
+      }
+    }
+  });
+
+  return RandomLayout;
+})(GalleryLayout);
+
+},{"./gallery-layout.es6":6,"three":3}],9:[function(require,module,exports){
+"use strict";
+
+var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var THREE = require("three");
 var Physijs = require("./lib/physi.js");
 var $ = require("jquery");
 var kt = require("kutility");
@@ -46239,20 +46433,45 @@ var SheenMesh = require("./sheen-mesh");
 var imageUtil = require("./image-util");
 var geometryUtil = require("./geometry-util");
 
+var RandomLayout = require("./gallery-layouts/random-layout.es6").RandomLayout;
+
+var Hole = require("./gallery-layouts/hole.es6").Hole;
+
+/// layout ideas
+/// 1) standard white walls *
+///  a), b), c) versions
+/// 2) the hole *
+/// 3) all surfaces are images *
+/// 4) extension of the random with images Flipped n Fucked
+/// 5) spiral hallway
+/// 6) big slideshow screen with an audience of male figures murmuring garbage
+/// 7) jail slit division between two very long rooms
+/// 8) extreme long hallway with moving airport style walkway
+/// 9) empty big room and they fall from the damn sky *
+
+/// sort of into the idea of visible first person hands
+
+var galleryLayoutCreators = [function (options) {
+  return new RandomLayout(options);
+}, function (options) {
+  return new Hole(options);
+}];
+
 var Gallery = exports.Gallery = (function () {
-  function Gallery(scene, options) {
+  function Gallery(scene, controlObject, options) {
     _classCallCheck(this, Gallery);
 
     this.scene = scene;
+    this.controlObject = controlObject;
     this.name = options.name || "David Zwirner Gallery";
     this.locationID = options.locationID || "212943401";
     this.yLevel = options.yLevel || 0;
+    this.layoutCreator = options.layoutCreator || kt.choice(galleryLayoutCreators);
 
-    this.photoMeshes = [];
     this.meshContainer = new THREE.Object3D();
 
-    this.ground = createGround(500, this.yLevel);
-    this.ground.addTo(this.meshContainer);
+    //this.ground = createGround(500, this.yLevel);
+    //this.ground.addTo(this.meshContainer);
 
     this.scene.add(this.meshContainer);
   }
@@ -46266,10 +46485,12 @@ var Gallery = exports.Gallery = (function () {
         $.getJSON(endpoint, function (data) {
           console.log(data);
 
-          for (var i = 0; i < data.length; i++) {
-            var media = data[i];
-            _this.makePhotoMesh(media);
-          }
+          _this.layout = _this.layoutCreator({
+            container: _this.meshContainer,
+            controlObject: _this.controlObject,
+            media: data,
+            yLevel: _this.yLevel
+          });
 
           if (callback) {
             callback();
@@ -46277,27 +46498,16 @@ var Gallery = exports.Gallery = (function () {
         });
       }
     },
+    update: {
+      value: function update() {
+        if (this.layout) {
+          this.layout.update();
+        }
+      }
+    },
     destroy: {
       value: function destroy() {
         this.scene.remove(this.meshContainer);
-      }
-    },
-    makePhotoMesh: {
-      value: function makePhotoMesh(media) {
-        var imageURL = media.thumbnail.url;
-        var texture = imageUtil.loadTexture(imageURL, false);
-        texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-        texture.minFilter = THREE.NearestFilter;
-
-        var width = Math.random() * 12 + 2.5;
-        var height = media.thumbnail.width / media.thumbnail.height * width;
-        var mesh = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.2), new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide }));
-
-        mesh.position.set(-50 + Math.random() * 100, Math.random() * 10 + height / 2 + 1.25 + this.yLevel, -Math.random() * 75);
-        mesh.castShadow = true;
-
-        this.photoMeshes.push(mesh);
-        this.meshContainer.add(mesh);
       }
     }
   });
@@ -46334,7 +46544,7 @@ function createGround(length, y) {
   });
 }
 
-},{"./geometry-util":7,"./image-util":8,"./lib/physi.js":10,"./sheen-mesh":13,"jquery":1,"kutility":2,"three":3}],7:[function(require,module,exports){
+},{"./gallery-layouts/hole.es6":7,"./gallery-layouts/random-layout.es6":8,"./geometry-util":10,"./image-util":11,"./lib/physi.js":13,"./sheen-mesh":16,"jquery":1,"kutility":2,"three":3}],10:[function(require,module,exports){
 "use strict";
 
 module.exports.computeShit = function (geometry) {
@@ -46342,7 +46552,7 @@ module.exports.computeShit = function (geometry) {
   geometry.computeVertexNormals();
 };
 
-},{}],8:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -46379,7 +46589,7 @@ var corsPath = function corsPath(path) {
   return "http://crossorigin.me/" + path; // add cors headers, thank you!
 };
 
-},{"three":3}],9:[function(require,module,exports){
+},{"three":3}],12:[function(require,module,exports){
 // ----------------------------------------------------------------------------
 // Buzz, a Javascript HTML5 Audio library
 // v1.1.10 - Built 2015-04-20 13:05
@@ -47124,7 +47334,7 @@ var corsPath = function corsPath(path) {
     return buzz;
 });
 
-},{}],10:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -48445,7 +48655,7 @@ module.exports = (function () {
 	return Physijs;
 })();
 
-},{"three":3}],11:[function(require,module,exports){
+},{"three":3}],14:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -48491,12 +48701,10 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
       value: function enter() {
         _get(Object.getPrototypeOf(MainScene.prototype), "enter", this).call(this);
 
-        this.camera.position.set(0, 5, 0);
-
         this.makeLights();
 
         // make all the galleries here
-        this.david = new Gallery(this.scene, {
+        this.david = new Gallery(this.scene, this.controlObject, {
           yLevel: 0
         });
       }
@@ -48524,7 +48732,13 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
       value: function update() {
         _get(Object.getPrototypeOf(MainScene.prototype), "update", this).call(this);
 
-        this.lightContainer.position.y = this.camera.position.y - 5;
+        if (this.lightContainer) {
+          this.lightContainer.position.y = this.camera.position.y - 5;
+        }
+
+        if (this.david) {
+          this.david.update();
+        }
       }
     },
     makeLights: {
@@ -48573,7 +48787,7 @@ var MainScene = exports.MainScene = (function (_SheenScene) {
   return MainScene;
 })(SheenScene);
 
-},{"./gallery.es6":6,"./lib/buzz.js":9,"./sheen-scene.es6":14,"jquery":1,"kutility":2,"three":3}],12:[function(require,module,exports){
+},{"./gallery.es6":9,"./lib/buzz.js":12,"./sheen-scene.es6":17,"jquery":1,"kutility":2,"three":3}],15:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -48623,6 +48837,7 @@ var Sheen = (function (_ThreeBoiler) {
     });
 
     this.mainScene = new MainScene(this.renderer, this.camera, this.scene, {});
+    this.mainScene.controlObject = this.controls.getObject();
   }
 
   _inherits(Sheen, _ThreeBoiler);
@@ -48656,6 +48871,7 @@ var Sheen = (function (_ThreeBoiler) {
         _get(Object.getPrototypeOf(Sheen.prototype), "render", this).call(this);
 
         this.controls.update();
+        this.mainScene.update();
       }
     }
   });
@@ -48668,7 +48884,7 @@ $(function () {
   sheen.activate();
 });
 
-},{"./controls/fly-controls":4,"./lib/physi.js":10,"./main-scene.es6":11,"./three-boiler.es6":15,"jquery":1,"three":3}],13:[function(require,module,exports){
+},{"./controls/fly-controls":4,"./lib/physi.js":13,"./main-scene.es6":14,"./three-boiler.es6":18,"jquery":1,"three":3}],16:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -48887,7 +49103,7 @@ SheenMesh.prototype.fallToFloor = function (threshold, speed) {
 SheenMesh.prototype.additionalInit = function () {};
 SheenMesh.prototype.additionalRender = function () {};
 
-},{"./lib/physi.js":10,"./util/model-loader":16,"kutility":2,"three":3}],14:[function(require,module,exports){
+},{"./lib/physi.js":13,"./util/model-loader":19,"kutility":2,"three":3}],17:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -49065,7 +49281,7 @@ var SheenScene = exports.SheenScene = (function () {
   return SheenScene;
 })();
 
-},{"jquery":1,"three":3}],15:[function(require,module,exports){
+},{"jquery":1,"three":3}],18:[function(require,module,exports){
 "use strict";
 
 var _createClass = (function () { function defineProperties(target, props) { for (var key in props) { var prop = props[key]; prop.configurable = true; if (prop.value) prop.writable = true; } Object.defineProperties(target, props); } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -49221,7 +49437,7 @@ THREE.typeface_js = window._typeface_js;
 
 // lol
 
-},{"jquery":1,"three":3}],16:[function(require,module,exports){
+},{"jquery":1,"three":3}],19:[function(require,module,exports){
 "use strict";
 
 var THREE = require("three");
@@ -49267,4 +49483,4 @@ function fetch(name, callback) {
   callback(geometry, materials);
 }
 
-},{"three":3}]},{},[12]);
+},{"three":3}]},{},[15]);

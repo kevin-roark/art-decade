@@ -33,6 +33,7 @@ class Sheen extends ThreeBoiler {
     });
 
     this.mainScene = new MainScene(this.renderer, this.camera, this.scene, {});
+    this.mainScene.controlObject = this.controls.getObject();
   }
 
   createScene() {
@@ -60,6 +61,7 @@ class Sheen extends ThreeBoiler {
     super.render();
 
     this.controls.update();
+    this.mainScene.update();
   }
 }
 

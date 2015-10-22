@@ -22,12 +22,10 @@ export class MainScene extends SheenScene {
   enter() {
     super.enter();
 
-    this.camera.position.set(0, 5, 0);
-
     this.makeLights();
 
     // make all the galleries here
-    this.david = new Gallery(this.scene, {
+    this.david = new Gallery(this.scene, this.controlObject, {
       yLevel: 0
     });
   }
@@ -51,7 +49,13 @@ export class MainScene extends SheenScene {
   update() {
     super.update();
 
-    this.lightContainer.position.y = this.camera.position.y - 5;
+    if (this.lightContainer) {
+      this.lightContainer.position.y = this.camera.position.y - 5;
+    }
+
+    if (this.david) {
+      this.david.update();
+    }
   }
 
   // Creation

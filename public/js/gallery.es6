@@ -7,19 +7,42 @@ let SheenMesh = require('./sheen-mesh');
 let imageUtil = require('./image-util');
 let geometryUtil = require('./geometry-util');
 
+import {RandomLayout} from './gallery-layouts/random-layout.es6';
+import {Hole} from './gallery-layouts/hole.es6';
+
+/// layout ideas
+/// 1) standard white walls *
+///  a), b), c) versions
+/// 2) the hole *
+/// 3) all surfaces are images *
+/// 4) extension of the random with images Flipped n Fucked
+/// 5) spiral hallway
+/// 6) big slideshow screen with an audience of male figures murmuring garbage
+/// 7) jail slit division between two very long rooms
+/// 8) extreme long hallway with moving airport style walkway
+/// 9) empty big room and they fall from the damn sky *
+
+/// sort of into the idea of visible first person hands
+
+var galleryLayoutCreators = [
+  (options) => { return new RandomLayout(options); },
+  (options) => { return new Hole(options); }
+];
+
 export class Gallery {
 
-  constructor(scene, options) {
+  constructor(scene, controlObject, options) {
     this.scene = scene;
+    this.controlObject = controlObject;
     this.name = options.name || 'David Zwirner Gallery';
     this.locationID = options.locationID || '212943401';
     this.yLevel = options.yLevel || 0;
+    this.layoutCreator = options.layoutCreator || kt.choice(galleryLayoutCreators);
 
-    this.photoMeshes = [];
     this.meshContainer = new THREE.Object3D();
 
-    this.ground = createGround(500, this.yLevel);
-    this.ground.addTo(this.meshContainer);
+    //this.ground = createGround(500, this.yLevel);
+    //this.ground.addTo(this.meshContainer);
 
     this.scene.add(this.meshContainer);
   }
@@ -29,10 +52,12 @@ export class Gallery {
     $.getJSON(endpoint, (data) => {
       console.log(data);
 
-      for (var i = 0; i < data.length; i++) {
-        var media = data[i];
-        this.makePhotoMesh(media);
-      }
+      this.layout = this.layoutCreator({
+        container: this.meshContainer,
+        controlObject: this.controlObject,
+        media: data,
+        yLevel: this.yLevel
+      });
 
       if (callback) {
         callback();
@@ -40,28 +65,14 @@ export class Gallery {
     });
   }
 
-  destroy() {
-    this.scene.remove(this.meshContainer);
+  update() {
+    if (this.layout) {
+      this.layout.update();
+    }
   }
 
-  makePhotoMesh(media) {
-    var imageURL = media.thumbnail.url;
-    var texture = imageUtil.loadTexture(imageURL, false);
-    texture.wrapS = texture.wrapT = THREE.ClampToEdgeWrapping;
-    texture.minFilter = THREE.NearestFilter;
-
-    var width = Math.random() * 12 + 2.5;
-    var height = (media.thumbnail.width / media.thumbnail.height) * width;
-    var mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(width, height, 0.2),
-      new THREE.MeshBasicMaterial({map: texture, side: THREE.DoubleSide})
-    );
-
-    mesh.position.set(-50 + Math.random() * 100, Math.random() * 10 + height/2 + 1.25 + this.yLevel, -Math.random() * 75);
-    mesh.castShadow = true;
-
-    this.photoMeshes.push(mesh);
-    this.meshContainer.add(mesh);
+  destroy() {
+    this.scene.remove(this.meshContainer);
   }
 
 }

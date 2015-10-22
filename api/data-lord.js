@@ -5,12 +5,6 @@ var secrets = require('./secrets');
 var instagramClient = require('./instagram');
 instagramClient.init(secrets.INSTAGRAM_CLIENT_ID, secrets.INSTAGRAM_CLIENT_SECRET);
 
-// instagram.randomGalleryMedia(function(err, res) {
-//   var data = res.data;
-//   var compressedData = instagram.compress(data);
-//   console.log(compressedData);
-// });
-
 var cache = {
   instagram: {}
 };
