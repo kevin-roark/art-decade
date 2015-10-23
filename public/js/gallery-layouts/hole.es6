@@ -10,13 +10,14 @@ export class Hole extends GalleryLayout {
 
   constructor(options) {
     this.xPosition = options.xPosition || 0;
+    this.yPosition = options.yPosition || -11;
     this.zPosition = options.zPosition || 0;
     this.imageWidth = options.imageWidth || 20;
     this.imageDepth = options.imageDepth || 20;
 
     this.distanceBetweenPhotos = options.distanceBetweenPhotos || 25;
     this.downwardVelocity = options.initialDownwardVelocity || -0.001;
-    this.thresholdVelocity = options.thresholdVelocity || -0.022;
+    this.thresholdVelocity = options.thresholdVelocity || -0.029;
     this.slowAcceleration = options.slowAcceleration || -0.00003;
     this.fastAcceleration = options.fastAcceleration || -0.0005; // good fun value is -0.0005
     this.repeatCount = options.repeatCount || Math.round(1000 / options.media.length);
@@ -60,7 +61,7 @@ export class Hole extends GalleryLayout {
       var mediaMesh = i === 0 ? mesh : mesh.clone();
 
       // cool stacky intersection way: this.yLevel - (index * i * this.distanceBetweenPhotos)
-      var y = this.yLevel - (i * distancePerChunk) - (index * this.distanceBetweenPhotos);
+      var y = this.yLevel - (i * distancePerChunk) - (index * this.distanceBetweenPhotos) + this.yPosition ;
       mediaMesh.position.set(this.xPosition, y, this.zPosition);
 
       this.container.add(mediaMesh);

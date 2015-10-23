@@ -25,7 +25,7 @@ import {Hole} from './gallery-layouts/hole.es6';
 /// sort of into the idea of visible first person hands
 
 var galleryLayoutCreators = [
-  (options) => { return new RandomLayout(options); },
+  //(options) => { return new RandomLayout(options); },
   (options) => { return new Hole(options); }
 ];
 
