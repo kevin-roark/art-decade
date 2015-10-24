@@ -41,7 +41,7 @@ module.exports.locationMedia = function(locationID, callback) {
 };
 
 module.exports.randomGalleryMedia = function(callback) {
-  var galleryIDs = ['212943401', '294847', '1218268', '401192748'];
+  var galleryIDs = ['212943401', '294847', '1218268', '401192748', '204075'];
   module.exports.locationMedia(kt.choice(galleryIDs), callback);
 };
 
